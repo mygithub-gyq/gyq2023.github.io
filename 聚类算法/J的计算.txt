@@ -1,0 +1,284 @@
+2023.7.11
+今日目标：H的计算以及最优的聚类中心个数Ng
+难度：较大
+逆向：一个案例
+
+一、H的计算：
+
+可以取的函数类型：
+幂函数|指数函数|对数函数|线性函数
+
+#python代码：
+
+import numpy as np
+
+def compute_H(Ng):
+    H=0.5*np.exp(0.2*Ng)+1.5*Ng
+    return int(H)
+
+H_list=[]
+
+for Ng in range(2,11):
+    H=compute_H(Ng)
+    H_list.append(H)
+
+print(H_list)
+
+二、最优的聚类中心个数
+
+想法1:
+先算一个最大的J,再依次减小，将所有的J放到列表中，选出最小的那个索引，即为最优粒的个数.
+想法2:
+距离怎么累加，怎么从delta中取出来，怎么得到索引，gama降序排序，从LT中拿出来这个簇，然后将点转换为索引，传给delta，再累加，即可.
+
+
+J值的计算
+
+1. 循环遍历 `ng`，即簇个数从2到`N`。
+2. 首先计算 `J[1]` 的值，它是 `alpha` 乘以 `compute_H(ng - 1)`，其中 `compute_H` 函数用于计算簇内的离散度。
+3. 初始化 `DistCost` 为0，用于累加簇间的距离。
+4. 对于每个簇归属值 `k`（从0到`ng-1`），遍历所有的节点 `i`。
+5. 如果节点 `i` 的归属簇为 `k`，则将该簇中的所有节点的距离累加到 `DistCost` 中。这里通过 `LT` 列表获取了该簇的节点列表，并将节点转换为索引，再从 `deltas` 列表中获取对应的距离值。
+6. 否则，我们需要查看所有的节点 `i` 是否归属于其他簇 `k`。为了实现这个逻辑，我们使用一个内层循环遍历所有的节点，并检查其归属簇是否为 `k`。
+	- 如果存在节点 `j` 的归属簇为 `k`，则将该簇中除节点 `i` 以外的所有节点的距离累加到 `DistCost` 中。
+	- 如果当前簇的归属簇值大于 `k`，说明我们已经处理完所有与 `k` 有连接关系的簇，可以直接退出内层循环。
+	- 如果没有找到归属于 `k` 的簇中存在节点 `i`，则将节点 `i` 的距离值累加到 `DistCost` 中。
+7. 最后，我们将 `J[ng]` 的值计算为 `alpha` 乘以 `compute_H(ng - 1)` 加上 `(1 - alpha)` 乘以 `DistCost`，即簇内离散度的权重加上簇间距离的权重。
+8. 返回计算得到的 `J` 列表。
+
+代码：
+
+import numpy as np
+
+P = [11, 12, 12, 5, 5, 12, 7, 5, 10, 10, 12, 12, -1]
+gama_Inds = [12, 10, 5, 2, 11, 9, 8, 1, 3, 7, 0, 4, 6]
+
+def construct_LT(P, gama_Inds):
+    LT = [[] for _ in range(len(P))]
+    for i, parent_id in enumerate(P):
+        if parent_id != -1:
+            child_id = i
+            LT[parent_id].append(child_id)
+    return LT
+
+LT = construct_LT(P=P, gama_Inds=gama_Inds)
+
+gama = [0.38, 0.56, 0.77, 0.48, 0.30, 5.63, 0.30, 0.47, 0.59, 0.67, 6.45, 0.71, 10.07]
+alpha = 0.6
+deltas = [1.17, 0.78, 0.83, 0.93, 1.13, 5.93, 1.38, 0.97, 0.38, 0.45, 3.97, 0.44, 5.93]
+
+def compute_H(Ng):
+    H = Ng
+    return H
+
+
+def calculate_J(gama, alpha, deltas, LT):
+    N = len(gama)
+    J = [0] * (N + 1)
+
+    for ng in range(2, N + 1):
+        J[1] = alpha * compute_H(ng - 1)
+        DistCost = 0
+
+        for k in range(ng):
+            for i in range(len(gama)):
+                if int(gama[i]) == k:
+                    current_cluster_nodes = LT[i]
+                    current_cluster_indices = [node for node in current_cluster_nodes]
+                    current_cluster_indices = [idx - 1 for idx in current_cluster_indices]  # 调整索引从0开始
+                    DistCost += np.sum([deltas[idx] for idx in current_cluster_indices])
+                else:
+                    found_i = False
+                    for j in range(len(gama)):
+                        if int(gama[j]) == k:
+                            current_cluster_nodes = LT[j]
+                            current_cluster_indices = [node for node in current_cluster_nodes]
+                            current_cluster_indices = [idx - 1 for idx in current_cluster_indices]  # 调整索引从0开始
+                            if i in current_cluster_indices:
+                                found_i = True
+                                DistCost += np.sum([deltas[idx] for idx in current_cluster_indices if idx != i])
+                            break
+                        elif int(gama[j]) > k:
+                            break
+                    if not found_i:
+                        DistCost += deltas[i]
+
+        J[ng] = alpha * compute_H(ng - 1) + (1 - alpha) * DistCost
+
+    return J
+
+#找到最优的簇个数，以及J的最小值
+
+def find_optimal_ng(gama, alpha, deltas, LT):
+    N = len(gama)
+    J = calculate_J(gama, alpha, deltas, LT)
+
+    ng_optimal = J.index(min(J[1:]))  # 排除掉J[0]
+    J_optimal = min(J[1:])
+
+    return ng_optimal, J_optimal
+
+ng_optimal, J_optimal = find_optimal_ng(gama, alpha, deltas, LT)
+
+print("J最小时对应的簇个数 ng:", ng_optimal)
+print("J最小值:", J_optimal)
+
+
+
+
+完整代码：
+
+import numpy as np
+#计算距离矩阵
+def getDistanceMatrix(datas):
+    N, D=np.shape(datas)
+    dists=np.zeros([N,N])
+    for i in range(N):
+        for j in range(N):
+            vi=datas[i,:]
+            vj=datas[j,:]
+            dists[i,j]=np.sqrt(np.dot((vi-vj),(vi-vj)))
+    return dists
+#计算密度rho
+def compute_rho(dists,dc):
+    N=np.shape(dists)[0]
+    rho=np.zeros(N)
+    for i in range(N):
+        rho[i]=np.sum(np.exp(-(dists[i,:]/dc)**2))
+    return rho
+#计算delta
+def compute_delta(dists,rho):
+    N=np.shape(dists)[0]
+    deltas=np.zeros(N)
+    nearest_neiber=np.zeros(N)
+    index_rho=np.argsort(-rho)
+    for i,index in enumerate(index_rho):
+        if i==0:
+            continue
+        index_higher_rho = index_rho[:i]
+        deltas[index] = np.min(dists[index, index_higher_rho])
+        index_nn = np.argmin(dists[index, index_higher_rho])
+        nearest_neiber[index] = index_higher_rho[index_nn].astype(int)
+    deltas[index_rho[0]] = np.max(deltas)
+    return deltas, nearest_neiber
+#计算gama
+def compute_gama(dists,rho,deltas):
+    N=np.shape(dists)[0]
+    gama=np.zeros(N)
+    for i in range(N):
+        gama[i]=rho[i]*deltas[i]
+    return gama
+
+#计算P
+def compute_P(dists,rho):
+    N=np.shape(dists)[0]
+    P=np.zeros(N)
+    index_rho=np.argsort(-rho)
+    for i,index in enumerate(index_rho):
+        if i==0:
+            continue
+        index_higher_rho=index_rho[:i]
+        P[index]=np.argmin(dists[index,index_higher_rho])
+    P[index_rho[0]]=-1
+    return P.astype(int)
+
+#计算gama降序排列后的索引
+def get_GamaInds(gama):
+    arr=np.array(gama)
+    gama_Inds=np.argsort(-arr)
+    return gama_Inds
+
+#P = [11, 12, 12, 5, 5, 12, 7, 5, 10, 10, 12, 12, -1]
+#gama_Inds = [12, 10, 5, 2, 11, 9, 8, 1, 3, 7, 0, 4, 6]
+#构造LT树
+def construct_LT(P, gama_Inds):
+    LT = [[] for _ in range(len(P))]
+    for i, parent_id in enumerate(P):
+        if parent_id != -1:
+            child_id = i
+            LT[parent_id].append(child_id)
+    return LT
+
+
+#gama = [0.38, 0.56, 0.77, 0.48, 0.30, 5.63, 0.30, 0.47, 0.59, 0.67, 6.45, 0.71, 10.07]
+#alpha = 0.6
+#deltas = [1.17, 0.78, 0.83, 0.93, 1.13, 5.93, 1.38, 0.97, 0.38, 0.45, 3.97, 0.44, 5.93]
+
+#计算H
+def compute_H(Ng):
+    H = Ng
+    return H
+
+#计算J
+def calculate_J(gama, alpha, deltas, LT):
+    N = len(gama)
+    J = [0] * (N + 1)
+
+    for ng in range(2, N + 1):
+        J[1] = alpha * compute_H(ng - 1)
+        DistCost = 0
+
+        for k in range(ng):
+            for i in range(len(gama)):
+                if int(gama[i]) == k:
+                    current_cluster_nodes = LT[i]
+                    current_cluster_indices = [node for node in current_cluster_nodes]
+                    current_cluster_indices = [idx - 1 for idx in current_cluster_indices]  # 调整索引从0开始
+                    DistCost += np.sum([deltas[idx] for idx in current_cluster_indices])
+                else:
+                    found_i = False
+                    for j in range(len(gama)):
+                        if int(gama[j]) == k:
+                            current_cluster_nodes = LT[j]
+                            current_cluster_indices = [node for node in current_cluster_nodes]
+                            current_cluster_indices = [idx - 1 for idx in current_cluster_indices]  # 调整索引从0开始
+                            if i in current_cluster_indices:
+                                found_i = True
+                                DistCost += np.sum([deltas[idx] for idx in current_cluster_indices if idx != i])
+                            break
+                        elif int(gama[j]) > k:
+                            break
+                    if not found_i:
+                        DistCost += deltas[i]
+
+        J[ng] = alpha * compute_H(ng - 1) + (1 - alpha) * DistCost
+
+    return J
+
+#找到最优的簇个数，以及J的最小值
+
+def find_optimal_ng(gama, alpha, deltas, LT):
+    N = len(gama)
+    J = calculate_J(gama, alpha, deltas, LT)
+
+    ng_optimal = J.index(min(J[1:]))  # 排除掉J[0]
+    J_optimal = min(J[1:])
+
+    return ng_optimal, J_optimal
+
+if __name__ == '__main__':
+
+    X=np.loadtxt("iris.txt", dtype=float, delimiter=',', usecols=(0, 1, 2, 3))
+
+    dists = getDistanceMatrix(X)
+    rho = compute_rho(dists=dists, dc=2)
+    deltas, nearest_neiber = compute_delta(dists=dists, rho=rho)
+    gama = compute_gama(dists=dists, rho=rho, deltas=deltas)
+    gama_Inds = get_GamaInds(gama=gama)
+    P = compute_P(dists=dists, rho=rho)
+    LT = construct_LT(P=P, gama_Inds=gama_Inds)
+    alpha=0.65
+    ng_optimal, J_optimal = find_optimal_ng(gama, alpha, deltas, LT)
+    print("J最小时对应的簇个数 ng:", ng_optimal)
+    print("J最小值:", J_optimal)
+
+
+
+
+
+#python练习
+
+要求:对学生成绩表按成绩进行排名：
+
+result=sorted(students,key=lambda x:x["sgrade"])
+
