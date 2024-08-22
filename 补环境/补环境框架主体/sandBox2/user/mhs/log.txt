@@ -1,0 +1,7 @@
+[EventTarget_addEventListener]正在执行,错误信息: Cannot read property 'apply' of undefined 
+[EventTarget_addEventListener]正在执行,错误信息: Cannot read property 'apply' of undefined 
+[EventTarget_addEventListener]正在执行,错误信息: Cannot read property 'apply' of undefined 
+[EventTarget_addEventListener]正在执行,错误信息: Cannot read property 'apply' of undefined 
+[EventTarget_addEventListener]正在执行,错误信息: Cannot read property 'apply' of undefined 
+HTMLCanvasElement_getContext_webgl2未实现 
+undefined 
