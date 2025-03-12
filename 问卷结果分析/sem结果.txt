@@ -1,0 +1,19 @@
+===== 结构方程模型（SEM）分析结果 =====
+
+                         lval  op                       rval  Estimate   Std. Err    z-value   p-value
+0            Job_Satisfaction   ~  Organizational_Commitment  0.064761   1.857382   0.034867  0.972186
+1                      Salary   ~           Job_Satisfaction  1.000000          -          -         -
+2             Work_Conditions   ~           Job_Satisfaction -0.431291   0.443915  -0.971561  0.331269
+3     Interpersonal_Relations   ~           Job_Satisfaction  0.367923   0.434638   0.846504  0.397272
+4            Leadership_Style   ~  Organizational_Commitment  1.000000          -          -         -
+5           Corporate_Culture   ~  Organizational_Commitment -0.026992   0.775987  -0.034784  0.972252
+6                 Performance   ~           Job_Satisfaction  5.261492  33.132931   0.158799  0.873827
+7                 Performance   ~  Organizational_Commitment -0.321841  10.946579  -0.029401  0.976545
+8            Job_Satisfaction  ~~           Job_Satisfaction  0.023780   0.155681   0.152751  0.878595
+9   Organizational_Commitment  ~~  Organizational_Commitment  1.000013  28.669671   0.034881  0.972175
+10          Corporate_Culture  ~~          Corporate_Culture  0.999265   0.084221  11.864805       0.0
+11    Interpersonal_Relations  ~~    Interpersonal_Relations  0.996179   0.082466  12.079882       0.0
+12           Leadership_Style  ~~           Leadership_Style  0.000000  28.669554        0.0       1.0
+13                Performance  ~~                Performance  0.340977   4.012381   0.084981  0.932276
+14                     Salary  ~~                     Salary  0.972089     0.1257   7.733433       0.0
+15            Work_Conditions  ~~            Work_Conditions  0.994838    0.08329  11.944229       0.0
